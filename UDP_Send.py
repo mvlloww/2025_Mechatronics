@@ -15,7 +15,7 @@ UDP_IP = "127.0.0.1"
 # This is the RENOTE port the machine will reply on (on that machine this is the value for the LOCAL port)
 UDP_PORT = 50001
 # This is the message. In this case it is a string 
-MESSAGE = "Hello, World!"
+MESSAGE = "Hello, friend!"
 
 # Print the values for confirmation
 print ("UDP target IP:", UDP_IP)
