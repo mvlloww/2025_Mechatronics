@@ -12,7 +12,8 @@ import logging  # This library will offer us a different method to print informa
 logging.basicConfig(level=logging.INFO)
 
 # This is the IP address that the server will listen on (localhost for loopback)
-TCP_IP = "127.0.0.1"
+#TCP_IP = "127.0.0.1"   # Localhost (this computer)
+TCP_IP = "0.0.0.0"  # Listen on all interfaces
 
 # This is the port that the server will listen on
 TCP_PORT = 25000
