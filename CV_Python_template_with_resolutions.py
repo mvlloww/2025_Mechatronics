@@ -32,14 +32,42 @@ def probe_resolutions(cap, candidates=None, wait=0.1):
 # in Laptops should be the build-in camera
 cap = cv2.VideoCapture(0)
 
+# Verify the camera opened; try a few alternate indices if not
+if not cap.isOpened():
+    print("Warning: camera index 0 not opened. Trying other indices...")
+    for i in range(1,4):
+        cap = cv2.VideoCapture(i)
+        if cap.isOpened():
+            print(f"Opened camera index {i}")
+            break
+    else:
+        raise SystemExit("Error: could not open any camera (indices 0-3).")
+
 # Probe before forcing other settings
 print("Probing common resolutions...")
 supported = probe_resolutions(cap)
 print("Supported resolutions (exact matches):", supported)
 
-# Set the width and heigth of the camera to 1920x1080
-cap.set(3,1920)
-cap.set(4,1080)
+# Try to use 1920x1080 if available, otherwise pick the highest supported
+preferred = (1920, 1080)
+if preferred in supported:
+    use_w, use_h = preferred
+elif supported:
+    # pick the first supported in the probed list (which is ordered high->low)
+    use_w, use_h = supported[0]
+    print(f"Preferred {preferred} not supported; falling back to {use_w}x{use_h}")
+else:
+    # fallback to a common safe size
+    use_w, use_h = (640, 480)
+    print(f"No exact-match supported resolutions found; falling back to {use_w}x{use_h}")
+
+# Apply chosen resolution and verify
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, use_w)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, use_h)
+time.sleep(0.1)
+actual_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+actual_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+print(f"Camera using resolution: {actual_w}x{actual_h}")
 
 #Create two opencv named windows
 cv2.namedWindow("frame-image", cv2.WINDOW_AUTOSIZE)
@@ -57,9 +85,19 @@ while(True):
     
     # Capture current frame from the camera
     ret, frame = cap.read()
-    
+
+    # Handle failed/empty capture gracefully (prevent cvtColor assertion)
+    if not ret or frame is None or getattr(frame, 'size', 0) == 0:
+        print("Warning: empty frame captured (ret={}, frame={}). Retrying...".format(ret, None if frame is None else 'ok'))
+        time.sleep(0.05)
+        continue
+
     # Convert the image from the camera to Gray scale
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    try:
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    except cv2.error as e:
+        print("cvtColor failed for this frame:", e)
+        continue
     
     # Display the original frame in a window
     cv2.imshow('frame-image',frame)
